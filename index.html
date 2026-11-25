@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MY SALOON – Your Style, Our Passion.</title>
+<link rel="manifest" href="manifest.json"><meta name="theme-color" content="#d4af37">
+<link rel="icon" href="logo.png"><link rel="apple-touch-icon" href="logo.png">
+<meta name="apple-mobile-web-app-capable" content="yes"><meta name="description" content="Your Style, Our Passion.">
+<style>
+:root{--g:#d4af37;--g2:#f5d76e;--bg:#0a0a0a;--card:#151515;--tx:#f4f4f4;--mu:#9a9a9a;--ln:#2a2a2a}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--tx);font:15px system-ui,sans-serif}
+h1,h2,h3{font-family:Georgia,serif;color:var(--g);margin:.4em 0}
+header{display:flex;align-items:center;gap:10px;padding:10px 16px;border-bottom:1px solid var(--ln);position:sticky;top:0;background:#000d;backdrop-filter:blur(8px);z-index:5}
+header img{height:42px;border-radius:8px}header b{font-family:Georgia,serif;color:var(--g);letter-spacing:2px}
+header .sp{flex:1}
+nav{display:flex;gap:6px;overflow-x:auto;padding:10px 12px;border-bottom:1px solid var(--ln)}
+nav a,.btn{background:none;border:1px solid var(--g);color:var(--g);padding:8px 14px;border-radius:999px;cursor:pointer;white-space:nowrap;font-size:14px;text-decoration:none}
+nav a.on,.btn.p{background:linear-gradient(135deg,var(--g),var(--g2));color:#000;font-weight:600}
+.btn.d{border-color:#e55;color:#e55}.btn.s{padding:5px 10px;font-size:12px}
+main{max-width:980px;margin:auto;padding:16px;animation:f .4s}@keyframes f{from{opacity:0;transform:translateY(8px)}}
+.card{background:var(--card);border:1px solid var(--ln);border-radius:14px;padding:14px;margin:10px 0}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:10px}
+.grid.w{grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+.stat b{display:block;font-size:26px;color:var(--g)}.stat span{color:var(--mu);font-size:12px}
+input,select{width:100%;padding:11px;margin:5px 0;background:#000;border:1px solid var(--ln);color:var(--tx);border-radius:10px;font-size:15px}
+.row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}.row>*{flex:1;min-width:120px}
+.slot{padding:8px 12px;border:1px solid var(--ln);border-radius:8px;background:#000;color:var(--tx);cursor:pointer}
+.slot.on{background:var(--g);color:#000}.slot:disabled{opacity:.25;text-decoration:line-through}
+.tag{font-size:11px;padding:3px 8px;border-radius:99px;border:1px solid var(--mu);color:var(--mu)}
+.tag.confirmed,.tag.active,.tag.completed{border-color:#5c5;color:#5c5}.tag.pending{border-color:var(--g);color:var(--g)}.tag.cancelled,.tag.suspended,.tag.rejected{border-color:#e55;color:#e55}
+.sel{outline:2px solid var(--g)}.mu{color:var(--mu)}
+#toast{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);background:var(--g);color:#000;padding:10px 18px;border-radius:99px;display:none;z-index:9}
+.auth{max-width:380px;margin:40px auto;text-align:center}.auth img{width:160px;border-radius:24px}
+#splash{position:fixed;inset:0;background:#000;z-index:99;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transition:opacity .6s,visibility .6s}
+#splash.hide{opacity:0;visibility:hidden}
+#splash img{width:170px;border-radius:28px;animation:pop 1s ease both;box-shadow:0 0 40px #d4af3755}
+#splash h1{font-size:34px;letter-spacing:6px;margin:18px 0 4px;animation:up .9s .3s ease both}
+#splash p{margin:0;color:var(--g2);font-size:14px;letter-spacing:2px;animation:up .9s .7s ease both}
+@keyframes pop{from{opacity:0;transform:scale(.6)}}@keyframes up{from{opacity:0;transform:translateY(14px)}}
+</style></head><body>
+<div id="splash"><img src="logo.png" alt=""><h1>MY SALOON</h1><p>Created by MAHMADULLAH</p></div>
+<div id="app"><p style="text-align:center;margin-top:40vh" class="mu">Loading…</p></div><div id="toast"></div>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+import {getFirestore,collection,doc,getDoc,getDocs,setDoc,addDoc,updateDoc,deleteDoc,writeBatch,query,where} from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+const cfg={apiKey:"AIzaSyBk4rIe4GgsthnPpwnZLh8NdMQNai1aYKk",authDomain:"my-saloon-a6b19.firebaseapp.com",projectId:"my-saloon-a6b19",storageBucket:"my-saloon-a6b19.firebasestorage.app",messagingSenderId:"386378316715",appId:"1:386378316715:web:81a4b4d8ad3fb4e4f530ee"};
+if("serviceWorker"in navigator)addEventListener("load",()=>navigator.serviceWorker.register("sw.js"));
+const t0=Date.now(),hideSplash=()=>setTimeout(()=>$("#splash").classList.add("hide"),Math.max(0,2200-(Date.now()-t0)));
+const app=initializeApp(cfg),auth=getAuth(app),db=getFirestore(app);
+const sec=initializeApp(cfg,"sec"),secAuth=getAuth(sec); // creates customers without logging admin out
+const ymd=d=>new Date(d.getTime()-d.getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const $=s=>document.querySelector(s),A=$("#app"),CUR="₹";
+const mail=p=>p.replace(/\D/g,"")+"@mysaloon.app";
+const list=async(c,q)=>(await getDocs(q||collection(db,c))).docs.map(d=>({id:d.id,...d.data()}));
+const toast=m=>{const t=$("#toast");t.textContent=m;t.style.display="block";setTimeout(()=>t.style.display="none",3000)};
+const esc=s=>String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const val=id=>$("#"+id).value.trim();
+const wrap=(h,body)=>`<header><img src="logo.png" onerror="this.style.display='none'"><b>MY SALOON</b><small class="mu" style="font-size:10px">v7</small><span class="sp"></span><button class="btn s" onclick="out()">Logout</button></header>${h}<main>${body}</main>`;
+const logo=`<img src="logo.png" onerror="this.style.display='none'">`;
+let S={role:null,user:null,tab:"",mode:"c",b:{}};
+const DEF=[["Haircut",300,30],["Hair Styling",400,30],["Hair Wash",150,20],["Beard Trimming",150,20],["Shaving",100,15],["Hair Colour",1200,60],["Hair Spa",800,45],["Facial",700,45],["Head Massage",300,20],["Skin Care",900,45]];
+const TIMES=[];for(let h=10;h<19;h++){TIMES.push(h+":00".padStart(3,"0"));TIMES.push(h+":30")}
+const pad=t=>t.padStart(5,"0");
+
+window.toast=toast;window.out=()=>signOut(auth);
+window.setMode=m=>{S.mode=m;login()};
+function login(){A.innerHTML=`<div class="auth">${logo}<h1>MY SALOON</h1><p class="mu">Your Style, Our Passion.</p>
+<div class="row"><button class="btn ${S.mode=="c"?"p":""}" onclick="setMode('c')">Customer</button><button class="btn ${S.mode=="a"?"p":""}" onclick="setMode('a')">Admin</button></div>
+<div class="card">${S.mode=="c"?`<input id="id" type="tel" placeholder="Phone number"><input id="pw" type="password" placeholder="Password">`:`<input id="id" type="email" placeholder="Admin email"><input id="pw" type="password" placeholder="Password">`}
+<button class="btn p" style="width:100%;margin-top:8px" onclick="doLogin()">Login</button></div>
+<p class="mu" style="font-size:12px">Customer accounts are created by the salon. Ask the salon for your password.</p></div>`}
+window.doLogin=async()=>{try{const id=val("id"),pw=$("#pw").value;await signInWithEmailAndPassword(auth,S.mode=="c"?mail(id):id,pw)}catch(e){toast("Login failed. Check your details.")}};
+
+onAuthStateChanged(auth,async u=>{
+  hideSplash();
+  if(!u){S.role=null;return login()}
+  try{
+    if((await getDoc(doc(db,"admins",u.uid))).exists()){S.role="admin";S.tab="dash";return admin()}
+    const us=await getDoc(doc(db,"users",u.uid));
+    if(!us.exists()||us.data().status!=="active"){toast("Account not active");return signOut(auth)}
+    S.role="cust";S.user={id:u.uid,...us.data()};S.tab="book";S.b={};cust()
+  }catch(e){toast("Error: "+e.message);signOut(auth)}
+});
+
+/* ---------------- ADMIN ---------------- */
+const aTabs=[["dash","Dashboard"],["appts","Appointments"],["custs","Customers"],["svcs","Services"],["staff","Staff"]];
+const nav=(t,tabs)=>`<nav>${tabs.map(([k,n])=>`<a class="${t==k?"on":""}" onclick="go('${k}')">${n}</a>`).join("")}</nav>`;
+window.go=t=>{S.tab=t;S.role=="admin"?admin():cust()};
+async function admin(){
+  let body="";
+  try{
+    if(S.tab=="dash"){
+      const [c,s,v,ap]=await Promise.all([list("users"),list("staff"),list("services"),list("appointments")]);
+      const today=ymd(new Date()),n=x=>ap.filter(a=>a.status==x).length;
+      const rev=ap.filter(a=>a.status=="completed"),tot=rev.reduce((a,b)=>a+b.price,0);
+      const m={};rev.forEach(a=>{const k=a.date.slice(0,7);m[k]=(m[k]||0)+a.price});
+      const st=(a,b)=>`<div class="card stat"><b>${a}</b><span>${b}</span></div>`;
+      body=`<h2>Dashboard</h2><div class="grid">${st(c.length,"Customers")}${st(s.length,"Staff")}${st(v.length,"Services")}${st(ap.filter(a=>a.date==today).length,"Today's bookings")}${st(n("pending"),"Pending")}${st(n("completed"),"Completed")}${st(n("cancelled"),"Cancelled")}${st(CUR+tot,"Total revenue")}</div>
+      <h3>Monthly revenue</h3><div class="card">${Object.keys(m).sort().map(k=>`<div class="row"><span>${k}</span><b style="flex:0 0 auto;color:var(--g)">${CUR}${m[k]}</b><div style="flex:3;height:8px;background:linear-gradient(90deg,var(--g),var(--g2));width:${Math.round(m[k]/tot*100)}%;border-radius:9px"></div></div>`).join("")||'<span class="mu">No completed bookings yet</span>'}</div>`;
+    }
+    if(S.tab=="appts"){
+      const ap=(await list("appointments")).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+      body=`<h2>Appointments</h2><input id="q" placeholder="Search name, phone, booking ID" oninput="fq()">`+ap.map(a=>`<div class="card ap" data-q="${esc((a.id+a.name+a.phone).toLowerCase())}"><div class="row"><b>${esc(a.service)}</b><span class="tag ${a.status}">${a.status}</span></div>
+      <div class="mu">${a.id} · ${a.date} ${a.time} · ${esc(a.staffName)}<br>${esc(a.name)} · ${esc(a.phone)} · ${CUR}${a.price}</div>
+      <div class="row" style="margin-top:8px">${a.status=="pending"?`<button class="btn s p" onclick="st('${a.id}','confirmed')">Approve</button><button class="btn s d" onclick="cancelAp('${a.id}','rejected')">Reject</button>`:""}
+      ${a.status=="confirmed"?`<button class="btn s p" onclick="st('${a.id}','completed')">Mark completed</button>`:""}
+      ${["pending","confirmed"].includes(a.status)?`<button class="btn s d" onclick="cancelAp('${a.id}','cancelled')">Cancel</button>`:""}</div></div>`).join("")||'<p class="mu">No appointments</p>';
+    }
+    if(S.tab=="custs"){
+      const c=await list("users");
+      body=`<h2>Customers</h2><div class="card"><h3>Add customer</h3><div class="row"><input id="n" placeholder="Name"><input id="p" type="tel" placeholder="Phone"><input id="w" placeholder="Password (min 6)"></div><button class="btn p" onclick="addC()">Create account</button></div>`+
+      c.map(u=>`<div class="card"><div class="row"><b>${esc(u.name)}</b><span class="tag ${u.status}">${u.status}</span></div><div class="mu">${esc(u.phone)}</div><div class="row" style="margin-top:8px">
+      <button class="btn s" onclick="tg('${u.id}','${u.status=="active"?"suspended":"active"}')">${u.status=="active"?"Suspend":"Activate"}</button><button class="btn s d" onclick="delC('${u.id}')">Delete</button></div></div>`).join("");
+    }
+    if(S.tab=="svcs"){
+      const v=await list("services");
+      body=`<h2>Services</h2>${v.length?"":`<button class="btn p" onclick="seed()">Load default services</button>`}<div class="card"><div class="row"><input id="n" placeholder="Name"><input id="p" type="number" placeholder="Price"><input id="d" type="number" placeholder="Minutes"></div><input id="i" placeholder="Image URL (optional)"><input id="ds" placeholder="Description"><button class="btn p" onclick="addS()">Add service</button></div>
+      <div class="grid w">${v.map(x=>`<div class="card"><b>${esc(x.name)}</b><div class="mu">${CUR}${x.price} · ${x.duration} min</div><div class="mu">${esc(x.desc||"")}</div><button class="btn s d" onclick="del('services','${x.id}')">Remove</button></div>`).join("")}</div>`;
+    }
+    if(S.tab=="staff"){
+      const s=await list("staff");
+      body=`<h2>Staff</h2><div class="card"><div class="row"><input id="n" placeholder="Barber name"><input id="h" placeholder="Hours e.g. 10:00-19:00"><input id="o" placeholder="Weekly off e.g. Sunday"></div><input id="i" placeholder="Photo URL (optional)"><button class="btn p" onclick="addT()">Add staff</button></div>
+      <div class="grid w">${s.map(x=>`<div class="card"><b>${esc(x.name)}</b><div class="mu">${esc(x.hours)} · Off: ${esc(x.off)}</div><button class="btn s d" onclick="del('staff','${x.id}')">Remove</button></div>`).join("")}</div>`;
+    }
+  }catch(e){body=`<p class="mu">Error: ${esc(e.message)}</p>`}
+  A.innerHTML=wrap(nav(S.tab,aTabs),body);
+}
+window.fq=()=>{const q=val("q").toLowerCase();document.querySelectorAll(".ap").forEach(e=>e.style.display=e.dataset.q.includes(q)?"":"none")};
+window.st=async(id,s)=>{await updateDoc(doc(db,"appointments",id),{status:s});toast("Updated");admin()};
+window.cancelAp=async(id,s)=>{const a=(await getDoc(doc(db,"appointments",id))).data(),b=writeBatch(db);
+  b.update(doc(db,"appointments",id),{status:s});b.delete(doc(db,"slots",`${a.staffId}_${a.date}_${a.time}`));await b.commit();toast("Updated");S.role=="admin"?admin():cust()};
+window.addC=async()=>{const n=val("n"),p=val("p"),w=val("w");if(!n||p.replace(/\D/g,"").length<7||w.length<6)return toast("Fill all fields (password 6+)");
+  try{const c=await createUserWithEmailAndPassword(secAuth,mail(p),w);await signOut(secAuth);
+  await setDoc(doc(db,"users",c.user.uid),{name:n,phone:p,status:"active"});toast("Customer created");admin()}catch(e){toast(e.code=="auth/email-already-in-use"?"Phone already registered":e.message)}};
+window.tg=async(id,s)=>{await updateDoc(doc(db,"users",id),{status:s});admin()};
+window.delC=async id=>{if(confirm("Delete this customer's profile? (Also remove their login in Firebase Console → Authentication)")){await deleteDoc(doc(db,"users",id));admin()}};
+window.seed=async()=>{for(const [name,price,duration] of DEF)await addDoc(collection(db,"services"),{name,price,duration,desc:"",img:""});admin()};
+window.addS=async()=>{if(!val("n")||!val("p")||!val("d"))return toast("Name, price, minutes required");await addDoc(collection(db,"services"),{name:val("n"),price:+val("p"),duration:+val("d"),desc:val("ds"),img:val("i")});admin()};
+window.addT=async()=>{if(!val("n"))return toast("Name required");await addDoc(collection(db,"staff"),{name:val("n"),hours:val("h")||"10:00-19:00",off:val("o")||"Sunday",photo:val("i")});admin()};
+window.del=async(c,id)=>{if(confirm("Remove?")){await deleteDoc(doc(db,c,id));admin()}};
+
+/* ---------------- CUSTOMER ---------------- */
+const cTabs=[["book","Book"],["mine","My Appointments"]];
+async function cust(){
+  let body="";
+  try{
+    if(S.tab=="book"){
+      const [v,s]=await Promise.all([list("services"),list("staff")]);S.v=v;S.s=s;const b=S.b;if(!b.date)b.date=ymd(new Date());
+      body=`<h2>Hello, ${esc(S.user.name)}</h2><h3>1. Choose service</h3><div class="grid w">${v.map(x=>`<div class="card ${b.svc==x.id?"sel":""}" onclick="pick('svc','${x.id}')" style="cursor:pointer">${x.img?`<img src="${esc(x.img)}" style="width:100%;height:90px;object-fit:cover;border-radius:8px">`:""}<b>${esc(x.name)}</b><div class="mu">${CUR}${x.price} · ${x.duration} min</div></div>`).join("")||'<p class="mu">No services yet</p>'}</div>
+      ${s.length?"":`<div class="card" style="border-color:#e55">No barbers have been added yet, so times cannot be shown. The salon must add staff first.</div>`}<h3>2. Barber</h3><select id="st" onchange="S.b.st=this.value;S.b.time=null;cust()"><option value="">Any available</option>${s.map(x=>`<option value="${x.id}" ${b.st==x.id?"selected":""}>${esc(x.name)}</option>`).join("")}</select>
+      <h3>3. Date</h3><div class="row" style="margin-bottom:6px">${[0,1,2,3,4,5,6].map(i=>{const d=new Date();d.setDate(d.getDate()+i);const k=ymd(d);return `<button class="slot ${b.date==k?"on":""}" style="flex:0 0 auto;min-width:0" onclick="S.b.date='${k}';S.b.time=null;cust()">${i==0?"Today":i==1?"Tomorrow":d.toLocaleDateString(undefined,{weekday:"short",day:"numeric",month:"short"})}</button>`}).join("")}</div>
+      <input id="dt" type="date" min="${ymd(new Date())}" value="${b.date}" onchange="if(this.value){S.b.date=this.value;S.b.time=null;cust()}">`;
+      if(b.date){
+        const taken=await list("slots",query(collection(db,"slots"),where("date","==",b.date)));
+        const now=new Date(),isT=b.date==ymd(now);
+        const cand=b.st?[b.st]:s.map(x=>x.id);
+        const ok=t=>cand.some(id=>!taken.find(k=>k.staffId==id&&k.time==pad(t)))&&!(isT&&new Date(b.date+"T"+pad(t))<now);
+        const nOk=TIMES.filter(ok).length;
+        body+=`<h3>4. Time</h3>${nOk?"":`<div class="card" style="border-color:#e55">No free times on this date. Please choose another day or barber.</div>`}<div class="row">${TIMES.map(t=>`<button class="slot ${b.time==t?"on":""}" ${ok(t)?"":"disabled"} onclick="S.b.time='${t}';cust()" style="flex:0 0 auto">${pad(t)}</button>`).join("")}</div>`;
+        S.taken=taken;
+      }
+      const sv=v.find(x=>x.id==b.svc),miss=!sv?"Choose a service first":!b.time?"Choose a time":"";
+      body+=`<div style="position:sticky;bottom:0;background:#000;border-top:1px solid var(--g);padding:12px 16px;margin:18px -16px -16px;z-index:4">${sv?`<b>${esc(sv.name)}</b> · ${b.date}${b.time?" · "+pad(b.time):""} · <b style="color:var(--g)">${CUR}${sv.price}</b>`:`<span class="mu">Nothing selected yet</span>`}<button class="btn p" style="width:100%;margin-top:8px;padding:12px;${miss?"opacity:.45":""}" onclick="${miss?`toast('${miss}')`:"book()"}">${miss||"Confirm booking"}</button></div>`;
+    }
+    if(S.tab=="mine"){
+      const ap=(await list("appointments",query(collection(db,"appointments"),where("uid","==",S.user.id)))).sort((a,b)=>(b.date+b.time).localeCompare(a.date+a.time));
+      body=`<h2>My Appointments</h2>`+(ap.map(a=>`<div class="card"><div class="row"><b>${esc(a.service)}</b><span class="tag ${a.status}">${a.status}</span></div><div class="mu">${a.id} · ${a.date} ${a.time} · ${esc(a.staffName)} · ${CUR}${a.price}</div>
+      ${["pending","confirmed"].includes(a.status)?`<button class="btn s d" style="margin-top:8px" onclick="if(confirm('Cancel booking?'))cancelAp('${a.id}','cancelled')">Cancel</button>`:""}</div>`).join("")||'<p class="mu">No bookings yet</p>');
+    }
+  }catch(e){body=`<p class="mu">Error: ${esc(e.message)}</p>`}
+  A.innerHTML=wrap(nav(S.tab,cTabs),body);
+}
+window.pick=(k,v)=>{S.b[k]=v;cust()};
+window.book=async()=>{
+  const b=S.b,sv=S.v.find(x=>x.id==b.svc),t=pad(b.time);
+  const sid=(b.st?[b.st]:S.s.map(x=>x.id)).find(id=>!S.taken.find(k=>k.staffId==id&&k.time==t));
+  if(!S.s.length)return toast("No barbers added yet. Ask the salon.");
+  if(!sid)return toast("Slot just taken, pick another");
+  const sf=S.s.find(x=>x.id==sid),bid="MS"+Date.now().toString(36).toUpperCase()+Math.floor(Math.random()*90+10);
+  try{const w=writeBatch(db);
+    w.set(doc(db,"slots",`${sid}_${b.date}_${t}`),{staffId:sid,date:b.date,time:t,uid:S.user.id});
+    w.set(doc(db,"appointments",bid),{uid:S.user.id,name:S.user.name,phone:S.user.phone,service:sv.name,price:sv.price,duration:sv.duration,staffId:sid,staffName:sf.name,date:b.date,time:t,status:"pending",created:Date.now()});
+    await w.commit();toast("Booked! ID "+bid);S.b={};S.tab="mine";cust()
+  }catch(e){console.error(e);toast(e.code=="permission-denied"?"Booking blocked: slot taken or rules not published":"Booking failed: "+(e.code||e.message));cust()}
+};
+</script></body></html>
